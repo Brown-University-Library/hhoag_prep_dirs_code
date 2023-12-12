@@ -2,10 +2,11 @@
 Creates all directories necessary for the project, as well as the item-mods.xml files.
 
 Usage:
+(venv) $ export PREP_DIRS__LOGLEVEL="INFO"  # optional; default is DEBUG
 (venv) $ python ./make_dirs.py --org_image_dir "/path/to/org_imagages_dir" --output_dir "/path/to/output/dir"
 """
 
-import argparse, csv, datetime, json, logging, os, pathlib, pprint
+import argparse, datetime, logging, os, pathlib, pprint
 
 
 lglvl: str = os.environ.get( 'PREP_DIRS__LOGLEVEL', 'DEBUG' )
