@@ -23,19 +23,54 @@ log.debug( 'logging working' )
 ## manager function -------------------------------------------------
 
 
-def prep_org_processing_dirs( org_ids_list: list, processing_output_dir_root: str, org_mods_files_dir_path: str ) -> None:
+    
+
+def prep_org_processing_dirs( 
+        org_ids_list: list, 
+        processing_output_dir_root: str, 
+        org_mods_files_dir_path: str, 
+        org_image_dirs_root: str 
+        ) -> None:
     """ Creates all directories necessary for each organization, as well as the item-mods.xml files.
         Called by dundermain. """
     log.debug( 'starting prep_org_processing_dirs()' )
     log.debug( f'org_ids_list, ``{org_ids_list}``' )
     log.debug( f'processing_output_dir_root, ``{processing_output_dir_root}``' )
     log.debug( f'org_mods_files_path, ``{org_mods_files_dir_path}``' )
-    validate_paths( processing_output_dir_root, org_mods_files_dir_path )  # will raise Exception on validation-failures
+    validate_paths( processing_output_dir_root, org_mods_files_dir_path, org_image_dirs_root )  # will raise Exception on validation-failures
     validate_org_ids( org_ids_list )  # will raise Exception on validation-failures
+    validate_image_dirs( org_ids_list, org_image_dirs_root )  # will raise Exception on validation-failures
     return
 
 
 ## helper functions -------------------------------------------------
+
+
+def validate_image_dirs( org_ids_list: list, org_image_dirs_root: str ) -> None:
+    """ Ensures that each image-directory exists, and contain items.
+        Called by prep_org_processing_dirs() """
+    log.debug( 'starting validate_image_dirs()' )
+    log.debug( f'org_ids_list, ``{org_ids_list}``' )
+    log.debug( f'org_image_dirs_root, ``{org_image_dirs_root}``' )
+    ## check that each org-image-dir exists -------------------------
+    for org_id in org_ids_list:
+        org_image_dir_path = pathlib.Path( org_image_dirs_root, org_id )
+        if not org_image_dir_path.exists():
+            msg = f'org-image-dir, ``{org_image_dir_path}`` does not exist; exiting'
+            log.error( msg )
+            raise Exception( msg )
+        if not org_image_dir_path.is_dir():
+            msg = f'org-image-dir, ``{org_image_dir_path}`` is not a directory; exiting'
+            log.error( msg )
+            raise Exception( msg )
+        ## check that each org-image-dir contains items ----------------
+        org_image_dir_contents = os.listdir( org_image_dir_path )
+        if len( org_image_dir_contents ) == 0:
+            msg = f'org-image-dir, ``{org_image_dir_path}`` is empty; exiting'
+            log.error( msg )
+            raise Exception( msg )
+    log.info( 'all org-image-dirs are valid, and contain items' )
+    return
 
 
 def validate_org_ids( org_ids_list: list ) -> None:
@@ -66,8 +101,11 @@ def validate_org_ids( org_ids_list: list ) -> None:
     return
 
 
-def validate_paths( processing_output_dir_root: str, org_mods_files_dir_path: str ) -> None:
-    """ Checks that the paths exist.
+def validate_paths( processing_output_dir_root: str, 
+                   org_mods_files_dir_path: str, 
+                   org_image_dirs_root: str 
+                   ) -> None:
+    """ Checks that the paths exist, and are directories.
         Called by prep_org_processing_dirs() """
     log.debug( 'starting validate_paths()' )
     log.debug( f'processing_output_dir_root, ``{processing_output_dir_root}``' )
@@ -88,6 +126,15 @@ def validate_paths( processing_output_dir_root: str, org_mods_files_dir_path: st
         raise Exception( msg )
     if not os.path.isdir( org_mods_files_dir_path ):
         msg = f'org_mods_files_path, ``{org_mods_files_dir_path}`` is not a directory; exiting'
+        log.error( msg )
+        raise Exception( msg )
+    ## -- check org_image_dirs_root ---------------------------------
+    if not os.path.exists( org_image_dirs_root ):
+        msg = f'org_image_dirs_root, ``{org_image_dirs_root}`` does not exist; exiting'
+        log.error( msg )
+        raise Exception( msg )
+    if not os.path.isdir( org_image_dirs_root ):
+        msg = f'org_image_dirs_root, ``{org_image_dirs_root}`` is not a directory; exiting'
         log.error( msg )
         raise Exception( msg )
     log.info( 'the shared-mount for processed-files-directory and the org-mods-files-directory paths are valid' )
@@ -117,8 +164,11 @@ if __name__ == '__main__':
     ## get org_mods_files path --------------------------------------
     org_mods_files_dir_path = os.getenv( 'PREP_DIRS__ORG_MODS_FILES_PATH', '../org_mods_files' )
     log.debug( f'org_mods_files_path, ``{org_mods_files_dir_path}``')
-    ## get to work
-    prep_org_processing_dirs( cleaned_org_ids_list, processing_output_dir_root, org_mods_files_dir_path )
+    ## get dir containing org-image-dirs ---------------------------
+    org_image_dirs_root = os.getenv( 'PREP_DIRS__ORG_IMAGE_DIRS_ROOT', '../org_image_dirs' )
+    log.debug( f'org_image_dirs_root, ``{org_image_dirs_root}``' )
+    ## get to work --------------------------------------------------
+    prep_org_processing_dirs( cleaned_org_ids_list, processing_output_dir_root, org_mods_files_dir_path, org_image_dirs_root )
     ## end ----------------------------------------------------------
     elapsed_time = datetime.datetime.now() - start_time
     log.debug( f'done processing; elapsed processing time, ``{elapsed_time}``' )
