@@ -5,19 +5,22 @@ Usage:
 (venv) $ python ./make_dirs.py --org_image_dir "/path/to/org_imagages_dir" --output_dir "/path/to/output/dir"
 """
 
-import argparse, csv, datetime, json, logging, os, pprint
+import argparse, csv, datetime, json, logging, os, pathlib, pprint
 
 
-lglvl: str = os.environ.get( 'LOGLEVEL', 'DEBUG' )
+lglvl: str = os.environ.get( 'PREP_DIRS__LOGLEVEL', 'DEBUG' )
 lglvldct = {
     'DEBUG': logging.DEBUG,
     'INFO': logging.INFO }
 logging.basicConfig(
-    level=lglvldct[lglvl],  # assigns the level-object to the level-key
+    level=lglvldct[lglvl],  # assigns the level-object to the level-key loaded from the envar
     format='[%(asctime)s] %(levelname)s [%(module)s-%(funcName)s()::%(lineno)d] %(message)s',
     datefmt='%d/%b/%Y %H:%M:%S' )
 log = logging.getLogger( __name__ )
 log.debug( 'logging working' )
+
+
+## manager function -------------------------------------------------
 
 
 def prep_org_processing_dirs( org_ids_list: list, processing_output_dir_root: str, org_mods_files_dir_path: str ) -> None:
@@ -27,8 +30,39 @@ def prep_org_processing_dirs( org_ids_list: list, processing_output_dir_root: st
     log.debug( f'org_ids_list, ``{org_ids_list}``' )
     log.debug( f'processing_output_dir_root, ``{processing_output_dir_root}``' )
     log.debug( f'org_mods_files_path, ``{org_mods_files_dir_path}``' )
-    validate_paths( processing_output_dir_root, org_mods_files_dir_path )
-    pass
+    validate_paths( processing_output_dir_root, org_mods_files_dir_path )  # will raise Exception on validation-failures
+    validate_org_ids( org_ids_list )  # will raise Exception on validation-failures
+    return
+
+
+## helper functions -------------------------------------------------
+
+
+def validate_org_ids( org_ids_list: list ) -> None:
+    """ Checks that the org_ids are valid.
+        Called by prep_org_processing_dirs() """
+    log.debug( 'starting validate_org_ids()' )
+    log.debug( f'org_ids_list, ``{org_ids_list}``' )
+    source_org_ids = [ 'HH020005', 'HH024889' ]  # 'American Mercury', 'Christian Coalition'
+    ## get list of mods files ----------------------------------------
+    mods_files: list = os.listdir( org_mods_files_dir_path )
+    if len( mods_files ) == 0:
+        msg = f'no mods files found in ``{org_mods_files_dir_path}``; exiting'
+        log.error( msg )
+        raise Exception( msg )
+    ## make list of org-ids from mods filenames ---------------------
+    mods_org_ids: list = []
+    for mods_file in mods_files:  # assumes filename like 'HH123456_mods.xml'
+        root_filename = pathlib.Path( mods_file ).stem
+        mods_org_id = root_filename.split( '_' )[0]
+        mods_org_ids.append( mods_org_id )
+    ## check that source org_ids are valid -------------------------------
+    for source_org_id in source_org_ids:
+        if source_org_id not in mods_org_ids:
+            msg = f'source org_id, ``{source_org_id}`` is not in mods_org_ids; exiting'
+            log.error( msg )
+            raise Exception( msg )
+    log.info( 'all source org_ids are valid' )
     return
 
 
@@ -56,7 +90,11 @@ def validate_paths( processing_output_dir_root: str, org_mods_files_dir_path: st
         msg = f'org_mods_files_path, ``{org_mods_files_dir_path}`` is not a directory; exiting'
         log.error( msg )
         raise Exception( msg )
+    log.info( 'the shared-mount for processed-files-directory and the org-mods-files-directory paths are valid' )
     return
+
+
+## dunndermain ------------------------------------------------------
 
 
 if __name__ == '__main__':
@@ -74,10 +112,10 @@ if __name__ == '__main__':
     cleaned_org_ids_list = [ org_id.strip() for org_id in org_ids_list ]
     log.debug( f'cleaned_org_ids_list, ``{cleaned_org_ids_list}``' )
     ## get output dir -----------------------------------------------
-    processing_output_dir_root = os.getenv( 'PROCESSING_OUTPUT_DIR', '../output_dir' )
+    processing_output_dir_root = os.getenv( 'PREP_DIRS__PROCESSING_OUTPUT_DIR', '../output_dir' )
     log.debug( f'processing_output_dir_root, ``{processing_output_dir_root}``' )
     ## get org_mods_files path --------------------------------------
-    org_mods_files_dir_path = os.getenv( 'ORG_MODS_FILES_PATH', '../org_mods_files' )
+    org_mods_files_dir_path = os.getenv( 'PREP_DIRS__ORG_MODS_FILES_PATH', '../org_mods_files' )
     log.debug( f'org_mods_files_path, ``{org_mods_files_dir_path}``')
     ## get to work
     prep_org_processing_dirs( cleaned_org_ids_list, processing_output_dir_root, org_mods_files_dir_path )
