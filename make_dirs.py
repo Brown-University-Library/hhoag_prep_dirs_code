@@ -39,15 +39,51 @@ def prep_org_processing_dirs(
     validate_paths( processing_output_dir_root, org_mods_files_dir_path, org_image_dirs_root )  # will raise Exception on validation-failures
     validate_org_ids( org_ids_list )  # will raise Exception on validation-failures
     validate_image_dirs( org_ids_list, org_image_dirs_root )  # will raise Exception on validation-failures
-    ## create output dirs -------------------------------------------
-    org_output_dir_paths = create_output_dirs( org_ids_list, processing_output_dir_root )
+    ## create org output dirs ---------------------------------------
+    org_output_dir_paths: list = create_org_output_dirs( org_ids_list, processing_output_dir_root )
+    assert type( org_output_dir_paths[0] ) == pathlib.PosixPath
+    ## createitem output dirs ---------------------------------------
+    item_output_dirs: list = create_item_output_dirs( org_image_dirs_root, org_output_dir_paths )
+    assert type( item_output_dirs[0] ) == pathlib.PosixPath
     return
 
 
 ## helper functions -------------------------------------------------
 
 
-def create_output_dirs( org_ids_list, processing_output_dir_root ) -> list:
+def create_item_output_dirs( org_image_dirs_root: str, org_output_dir_paths: list ) -> list:
+    """ Creates the item-output-dirs.
+        For each org in org_output_dir_paths...
+        - gets the org-id
+        - uses the org-id to get the org-image-dir-path
+        - gets a list of the image-filenames in the org-image-dir
+        - creates an item-output-dir for each image-filename
+        Retuns back a list of all the item-output-dirs.
+        Called by prep_org_processing_dirs() """
+    log.debug( 'starting create_item_output_dirs()' )
+    log.debug( f'org_output_dir_paths, ``{org_output_dir_paths}``' )
+    item_output_dir_paths = []
+    for org_output_dir_path in org_output_dir_paths:
+        assert type( org_output_dir_path ) == pathlib.PosixPath
+        org_id = org_output_dir_path.name
+        log.debug( f'org_id, ``{org_id}``' )
+        org_image_dir_path = pathlib.Path( org_image_dirs_root, org_id )
+        org_image_filenames = os.listdir( org_image_dir_path )
+        for org_image_filename in org_image_filenames:
+            org_image_root_filename = pathlib.Path( org_image_filename ).stem
+            item_output_dir_path = pathlib.Path( org_output_dir_path, org_image_root_filename )
+            item_output_dir_paths.append( item_output_dir_path )
+            if not item_output_dir_path.exists():
+                os.makedirs( item_output_dir_path )
+                log.debug( f'created item_output_dir_path, ``{item_output_dir_path}``' )
+            else:
+                log.debug( f'item_output_dir_path, ``{item_output_dir_path}`` already exists' )
+    log.debug( f'item_output_dir_paths, ``{pprint.pformat(item_output_dir_paths)}``' )
+    log.info( 'all item-output-dirs created' )
+    return item_output_dir_paths
+
+
+def create_org_output_dirs( org_ids_list, processing_output_dir_root ) -> list:
     """ Creates the org-output-dirs and returns list of paths.
         Called by prep_org_processing_dirs() """
     org_output_dir_paths = []
