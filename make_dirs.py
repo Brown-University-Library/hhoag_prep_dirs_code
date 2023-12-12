@@ -7,6 +7,7 @@ Usage:
 """
 
 import argparse, datetime, logging, os, pathlib, pprint
+from item_mods_maker import ItemModsMaker
 
 
 lglvl: str = os.environ.get( 'PREP_DIRS__LOGLEVEL', 'DEBUG' )
@@ -46,6 +47,9 @@ def prep_org_processing_dirs(
     ## createitem output dirs ---------------------------------------
     item_output_dirs: list = create_item_output_dirs( org_image_dirs_root, org_output_dir_paths )
     assert type( item_output_dirs[0] ) == pathlib.PosixPath
+    ## create item-mods ---------------------------------------------
+    item_mods_maker = ItemModsMaker()
+    item_mods_maker.create_item_mods( org_ids_list, org_mods_files_dir_path, item_output_dirs )
     return
 
 
