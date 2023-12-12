@@ -23,8 +23,6 @@ log.debug( 'logging working' )
 ## manager function -------------------------------------------------
 
 
-    
-
 def prep_org_processing_dirs( 
         org_ids_list: list, 
         processing_output_dir_root: str, 
@@ -37,13 +35,32 @@ def prep_org_processing_dirs(
     log.debug( f'org_ids_list, ``{org_ids_list}``' )
     log.debug( f'processing_output_dir_root, ``{processing_output_dir_root}``' )
     log.debug( f'org_mods_files_path, ``{org_mods_files_dir_path}``' )
+    ## validate paths -----------------------------------------------
     validate_paths( processing_output_dir_root, org_mods_files_dir_path, org_image_dirs_root )  # will raise Exception on validation-failures
     validate_org_ids( org_ids_list )  # will raise Exception on validation-failures
     validate_image_dirs( org_ids_list, org_image_dirs_root )  # will raise Exception on validation-failures
+    ## create output dirs -------------------------------------------
+    org_output_dir_paths = create_output_dirs( org_ids_list, processing_output_dir_root )
     return
 
 
 ## helper functions -------------------------------------------------
+
+
+def create_output_dirs( org_ids_list, processing_output_dir_root ) -> list:
+    """ Creates the org-output-dirs and returns list of paths.
+        Called by prep_org_processing_dirs() """
+    org_output_dir_paths = []
+    for org_id in org_ids_list:
+        org_output_dir_path = pathlib.Path( processing_output_dir_root, org_id )
+        org_output_dir_paths.append( org_output_dir_path )
+        if not org_output_dir_path.exists():
+            os.makedirs( org_output_dir_path )
+            log.debug( f'created output_dir_path, ``{org_output_dir_path}``' )
+        else:
+            log.debug( f'output_dir_path, ``{org_output_dir_path}`` already exists' )
+    log.info( 'all output-dirs created' )
+    return org_output_dir_paths
 
 
 def validate_image_dirs( org_ids_list: list, org_image_dirs_root: str ) -> None:
