@@ -3,7 +3,7 @@ Creates all directories necessary for the project, as well as the item-mods.xml 
 
 Usage:
 (venv) $ export PREP_DIRS__LOGLEVEL="INFO"  # optional; default is DEBUG
-(venv) $ python ./make_dirs.py --org_image_dir "/path/to/org_imagages_dir" --output_dir "/path/to/output/dir"
+(venv) $ python ./make_dirs.py --org_IDs "hh123456,hh234567"
 """
 
 import argparse, datetime, logging, os, pathlib, pprint
